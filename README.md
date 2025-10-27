@@ -3,6 +3,17 @@
 
 ---
 
+## 🧸 Project Vision: Baby Room Climate Guardian
+Problem<br>
+
+<sub>Newborns are highly sensitive to temperature and humidity.<br>
+Most baby monitors only track sound or video, not the environmental comfort that affects sleep quality, breathing, and skin health.<br>
+Parents often don’t know when the room becomes too hot, cold, or dry — especially at night.<br></sub>
+
+Goal<br>
+
+<sub>Build a smart baby-room monitor that continuously measures and reports environmental conditions, notifies parents of anomalies, and logs data for trend analysis — reliable, low-cost, and safe.</sub>
+
 ## 🧠 Overview
 Please note, this is a work in progress and not yet finished.<br>
 <sub>This project is a **bare-metal firmware** running on an STM32F401RE Nucleo board.<br>
