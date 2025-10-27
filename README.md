@@ -5,11 +5,11 @@
 
 ## 🧠 Overview
 Please note, this is a work in progress and not yet finished.<br>
-This project is a **bare-metal firmware** running on an STM32F401RE Nucleo board.<br>
+<sub>This project is a **bare-metal firmware** running on an STM32F401RE Nucleo board.<br>
 It interfaces with a **BME280 sensor** (via I²C) for temperature and humidity monitoring and an **ESP8266 Wi-Fi module** (via UART) to send readings to a remote dashboard — forming the basis for a connected baby-room monitor.<br>
 This project showcases low-level embedded development skills, including direct register manipulation and peripheral driver design without HAL abstraction.<br>
 It reflects the ability to analyze microcontroller datasheets and reference manuals, translating hardware specifications into working C code.<br>
-The implementation emphasizes a deep understanding of clock trees, GPIO modes, bus interfaces, and serial communication protocols.<br>
+The implementation emphasizes a deep understanding of clock trees, GPIO modes, bus interfaces, and serial communication protocols.<br></sub>
 ---
 
 ## ⚙️ Features
