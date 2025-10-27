@@ -1,0 +1,10 @@
+# ninja log v5
+2	257	1760182854819785105	CMakeFiles/project_tests.dir/Src/main.c.obj	6013b8844a72efb6
+2	89	1758754092298326200	CMakeFiles/project_tests.dir/Startup/startup_stm32f401retx.s.obj	7ea8509b866c3407
+1	162	1758754092370134109	CMakeFiles/project_tests.dir/Src/syscall.c.obj	d45ef857b7afac8a
+257	396	1760182854913596368	project_tests.elf	315bfd1ff34ea11d
+4	254	1760176873339747262	CMakeFiles/project_tests.dir/Src/gpio.c.obj	e25760fa91f90346
+2	122	1758754092330903482	CMakeFiles/project_tests.dir/Src/sysmem.c.obj	ec60d09df1619c3a
+7	857	1758797708773119613	CMakeFiles/project_tests.dir/Src/init.c.obj	ce7f33cab484fbfa
+4	255	1760176873339744679	CMakeFiles/project_tests.dir/Src/rcc.c.obj	4f2d943c8062ee6d
+1	261	1760179838152173699	CMakeFiles/project_tests.dir/Src/usart.c.obj	1f0a429c67b3f4b9

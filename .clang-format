@@ -1,0 +1,43 @@
+BasedOnStyle: LLVM
+
+# Indentation
+IndentWidth: 4
+UseTab: Never
+TabWidth: 4
+
+# Line length
+ColumnLimit: 100
+
+# Braces (K&R style = inline)
+BreakBeforeBraces: Attach
+
+# Function signatures
+AlwaysBreakAfterReturnType: None   # keep return type + function name together
+AlignAfterOpenBracket: Align
+BinPackArguments: false
+AllowAllParametersOfDeclarationOnNextLine: true
+
+# Control statements
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+
+# Spaces
+SpaceBeforeParens: ControlStatements   # if (x) { not if(x){
+SpacesInParentheses: false
+SpacesInAngles: false
+SpaceAfterCStyleCast: true
+SpaceBeforeAssignmentOperators: true
+
+# Pointers/references
+PointerAlignment: Left                 # int* ptr, not int *ptr
+DerivePointerAlignment: false
+
+# Alignment
+AlignOperands: true
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+
+# Misc
+KeepEmptyLinesAtTheStartOfBlocks: false
+IndentCaseLabels: true

@@ -1,0 +1,44 @@
+[
+{
+  "directory": "/Users/benweissman/Desktop/Projects/stm32/project_tests/build/debug",
+  "command": "/opt/ST/STM32CubeCLT_1.19.0/GNU-tools-for-STM32/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F401xE -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Inc -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Device/ST/STM32F4xx/Include -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Include -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Src -fdata-sections -ffunction-sections -Wl,--gc-sections -g -std=gnu11 -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -Wpedantic -Wno-unused-parameter -Og -g3 -ggdb -o CMakeFiles/project_tests.dir/Src/main.c.obj -c /Users/benweissman/Desktop/Projects/stm32/project_tests/Src/main.c",
+  "file": "/Users/benweissman/Desktop/Projects/stm32/project_tests/Src/main.c",
+  "output": "CMakeFiles/project_tests.dir/Src/main.c.obj"
+},
+{
+  "directory": "/Users/benweissman/Desktop/Projects/stm32/project_tests/build/debug",
+  "command": "/opt/ST/STM32CubeCLT_1.19.0/GNU-tools-for-STM32/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F401xE -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Inc -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Device/ST/STM32F4xx/Include -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Include -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Src -fdata-sections -ffunction-sections -Wl,--gc-sections -g -std=gnu11 -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -Wpedantic -Wno-unused-parameter -Og -g3 -ggdb -o CMakeFiles/project_tests.dir/Src/gpio.c.obj -c /Users/benweissman/Desktop/Projects/stm32/project_tests/Src/gpio.c",
+  "file": "/Users/benweissman/Desktop/Projects/stm32/project_tests/Src/gpio.c",
+  "output": "CMakeFiles/project_tests.dir/Src/gpio.c.obj"
+},
+{
+  "directory": "/Users/benweissman/Desktop/Projects/stm32/project_tests/build/debug",
+  "command": "/opt/ST/STM32CubeCLT_1.19.0/GNU-tools-for-STM32/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F401xE -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Inc -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Device/ST/STM32F4xx/Include -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Include -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Src -fdata-sections -ffunction-sections -Wl,--gc-sections -g -std=gnu11 -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -Wpedantic -Wno-unused-parameter -Og -g3 -ggdb -o CMakeFiles/project_tests.dir/Src/rcc.c.obj -c /Users/benweissman/Desktop/Projects/stm32/project_tests/Src/rcc.c",
+  "file": "/Users/benweissman/Desktop/Projects/stm32/project_tests/Src/rcc.c",
+  "output": "CMakeFiles/project_tests.dir/Src/rcc.c.obj"
+},
+{
+  "directory": "/Users/benweissman/Desktop/Projects/stm32/project_tests/build/debug",
+  "command": "/opt/ST/STM32CubeCLT_1.19.0/GNU-tools-for-STM32/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F401xE -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Inc -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Device/ST/STM32F4xx/Include -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Include -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Src -fdata-sections -ffunction-sections -Wl,--gc-sections -g -std=gnu11 -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -Wpedantic -Wno-unused-parameter -Og -g3 -ggdb -o CMakeFiles/project_tests.dir/Src/usart.c.obj -c /Users/benweissman/Desktop/Projects/stm32/project_tests/Src/usart.c",
+  "file": "/Users/benweissman/Desktop/Projects/stm32/project_tests/Src/usart.c",
+  "output": "CMakeFiles/project_tests.dir/Src/usart.c.obj"
+},
+{
+  "directory": "/Users/benweissman/Desktop/Projects/stm32/project_tests/build/debug",
+  "command": "/opt/ST/STM32CubeCLT_1.19.0/GNU-tools-for-STM32/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F401xE -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Inc -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Device/ST/STM32F4xx/Include -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Include -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Src -fdata-sections -ffunction-sections -Wl,--gc-sections -g -std=gnu11 -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -Wpedantic -Wno-unused-parameter -Og -g3 -ggdb -o CMakeFiles/project_tests.dir/Src/syscall.c.obj -c /Users/benweissman/Desktop/Projects/stm32/project_tests/Src/syscall.c",
+  "file": "/Users/benweissman/Desktop/Projects/stm32/project_tests/Src/syscall.c",
+  "output": "CMakeFiles/project_tests.dir/Src/syscall.c.obj"
+},
+{
+  "directory": "/Users/benweissman/Desktop/Projects/stm32/project_tests/build/debug",
+  "command": "/opt/ST/STM32CubeCLT_1.19.0/GNU-tools-for-STM32/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F401xE -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Inc -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Device/ST/STM32F4xx/Include -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Include -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Src -fdata-sections -ffunction-sections -Wl,--gc-sections -g -std=gnu11 -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -Wpedantic -Wno-unused-parameter -Og -g3 -ggdb -o CMakeFiles/project_tests.dir/Src/sysmem.c.obj -c /Users/benweissman/Desktop/Projects/stm32/project_tests/Src/sysmem.c",
+  "file": "/Users/benweissman/Desktop/Projects/stm32/project_tests/Src/sysmem.c",
+  "output": "CMakeFiles/project_tests.dir/Src/sysmem.c.obj"
+},
+{
+  "directory": "/Users/benweissman/Desktop/Projects/stm32/project_tests/build/debug",
+  "command": "/opt/ST/STM32CubeCLT_1.19.0/GNU-tools-for-STM32/bin/arm-none-eabi-gcc -DDEBUG -DSTM32F401xE -I/Users/benweissman/Desktop/Projects/stm32/project_tests -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Device/ST/STM32F4xx/Include -I/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Include -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Inc -I/Users/benweissman/Desktop/Projects/stm32/project_tests/Src -g -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -Wpedantic -Wno-unused-parameter -x assembler-with-cpp -MMD -MP -Og -g3 -ggdb -o CMakeFiles/project_tests.dir/Startup/startup_stm32f401retx.s.obj -c /Users/benweissman/Desktop/Projects/stm32/project_tests/Startup/startup_stm32f401retx.s",
+  "file": "/Users/benweissman/Desktop/Projects/stm32/project_tests/Startup/startup_stm32f401retx.s",
+  "output": "CMakeFiles/project_tests.dir/Startup/startup_stm32f401retx.s.obj"
+}
+]
