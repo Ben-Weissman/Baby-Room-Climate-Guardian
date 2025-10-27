@@ -1,0 +1,33 @@
+# --- Build output ---
+build/
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+
+# --- CMake ---
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# --- IDE ---
+.vscode/ipch/
+.vscode/.browse.VC.db*
+.vscode/.cmake/
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/settings.json
+
+# --- STM32/CubeIDE ---
+*.launch
+*.log
+*.uvoptx
+*.uvprojx
+
+# --- OS / Misc ---
+.DS_Store
+Thumbs.db

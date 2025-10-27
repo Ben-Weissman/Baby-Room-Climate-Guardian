@@ -1,6 +1,6 @@
-set(CMAKE_HOST_SYSTEM "Darwin-24.6.0")
+set(CMAKE_HOST_SYSTEM "Darwin-25.0.0")
 set(CMAKE_HOST_SYSTEM_NAME "Darwin")
-set(CMAKE_HOST_SYSTEM_VERSION "24.6.0")
+set(CMAKE_HOST_SYSTEM_VERSION "25.0.0")
 set(CMAKE_HOST_SYSTEM_PROCESSOR "arm64")
 
 include("/Users/benweissman/Desktop/Projects/stm32/project_tests/cmake/gcc-arm-none-eabi.cmake")

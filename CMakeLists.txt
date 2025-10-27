@@ -32,10 +32,11 @@ set(cpu_PARAMS
 
 # Sources
 set(sources_SRCS
-    Src/main.c
-    Src/gpio.c
-    Src/rcc.c
-    Src/usart.c
+    core/src/main.c
+    core/src/gpio.c
+    core/src/rcc.c
+    core/src/usart.c
+    core/src/i2c.c
 )
 
 # Include directories for all compilers
@@ -88,10 +89,10 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     $<$<COMPILE_LANGUAGE:C>: ${include_c_DIRS}>
     $<$<COMPILE_LANGUAGE:CXX>: ${include_cxx_DIRS}>
     $<$<COMPILE_LANGUAGE:ASM>: ${include_asm_DIRS}>
-    /Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Device/ST/STM32F4xx/Include
-    /Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Include
-    /Users/benweissman/Desktop/Projects/stm32/project_tests/Inc
-    /Users/benweissman/Desktop/Projects/stm32/project_tests/Src
+    ${CMAKE_SOURCE_DIR}/core/inc
+    ${CMAKE_SOURCE_DIR}/core/inc/CMSIS/Device/ST/STM32F4xx/Include
+    ${CMAKE_SOURCE_DIR}/core/inc/CMSIS/Include
+    ${CMAKE_SOURCE_DIR}/core/src
 )
 
 # Add project symbols (macros)
