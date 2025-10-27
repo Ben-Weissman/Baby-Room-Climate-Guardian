@@ -1,3 +1,0 @@
-/Users/benweissman/Desktop/Projects/stm32/project_tests/build/debug/CMakeFiles/project_tests.dir
-/Users/benweissman/Desktop/Projects/stm32/project_tests/build/debug/CMakeFiles/edit_cache.dir
-/Users/benweissman/Desktop/Projects/stm32/project_tests/build/debug/CMakeFiles/rebuild_cache.dir
