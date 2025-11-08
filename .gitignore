@@ -29,6 +29,10 @@ CMakePresets.json
 *.uvprojx
 *.ioc
 
+# Ignore Startup folder
+Startup/
+
+
 # --- OS / Misc ---
 .DS_Store
 Thumbs.db

@@ -1,51 +1,106 @@
-# 🍼 STM32 Baby Room Climate Guardian 👶  
+# 🍼 STM32 Baby Room Climate Guardian 👶
+
 **_In Progress_**  
-*Bare-metal STM32F401RE temperature & humidity monitoring system*
+_Bare-metal STM32F401RE temperature & humidity monitoring system_
 
 ---
 
-## 🧸 Project Vision — Baby Room Climate Guardian
+## 🧸 Project Vision — From a Real Need
 
-### 🩵 Problem
-Newborns are highly sensitive to temperature and humidity.  
-Most baby monitors only track sound or video — not the environmental comfort that affects sleep quality, breathing, and skin health.  
-Parents often don’t know when the room becomes too hot, cold, or dry — especially at night.
+### Overview
 
-### 🎯 Goal
-Build a smart baby-room monitor that continuously measures and reports environmental conditions, notifies parents of anomalies, and logs data for trend analysis — reliable, low-cost, and safe.
+As a new parent, I wanted a way to **know my baby’s room is always comfortable** — not too hot, not too dry, not too cold.  
+Most monitors only capture sound or video, but **environmental comfort** has just as much impact on a baby’s sleep and health.  
+This project started from that need: a small, reliable system that measures and reports room conditions in real time.
 
 ---
 
-## 🧠 Overview
-> **Note:** This project is a work in progress and not yet finished.
+## 🎯 Goal
 
-This project is a **bare-metal firmware** running on an **STM32F401RE Nucleo** board.  
-It interfaces with a **BME280 sensor** (via I²C) for temperature and humidity monitoring and an **ESP8266 Wi-Fi module** (via UART) to send readings to a remote dashboard — forming the basis for a connected baby-room monitor.
+### Objective
 
-This project showcases low-level embedded development skills, including direct register manipulation and peripheral driver design without HAL abstraction.  
-It reflects the ability to analyze microcontroller datasheets and reference manuals, translating hardware specifications into working C code.  
-The implementation emphasizes a deep understanding of:
-- Clock trees  
-- GPIO modes  
-- Bus interfaces  
-- Serial communication protocols
+Design a **bare-metal embedded system** that:
+
+- Continuously measures temperature and humidity
+- Sends data wirelessly to a simple dashboard
+- Alerts parents when conditions go out of range
+
+All while keeping the firmware **lightweight**, **modular**, and **built entirely from scratch** — no vendor libraries, no HAL.
+
+---
+
+## 🧠 Technical Overview
+
+### Architecture
+
+The firmware runs directly on the **STM32F401RE Nucleo** board and communicates with:
+
+- A **BME280** sensor over **I²C** for temperature & humidity readings
+- An **ESP8266** module over **UART** for Wi-Fi connectivity
+
+### Core Focus
+
+This project demonstrates:
+
+- Writing **register-level peripheral drivers** (GPIO, RCC, USART, I²C)
+- Working directly with **microcontroller datasheets and reference manuals**
+- Understanding **clock configuration**, **bus timing**, and **low-level I/O control**
+
+The focus isn’t just on driver design, but on using them to **solve a practical, real-world problem**.
 
 ---
 
 ## ⚙️ Features
-- Custom **register-level drivers** (no HAL)
-  - GPIO  
-  - RCC (Clock Control)  
-  - USART (Serial Communication)  
+
+### Current Capabilities
+
+- Fully custom, HAL-free peripheral drivers:
+  - GPIO
+  - RCC (Clock Control)
+  - USART (Serial Communication)
   - I²C (for BME280)
-- Modular structure for easy extension
+- Modular and extensible structure
+- Real-time environmental monitoring logic in progress
 
 ---
 
 ## 🧰 Toolchain
-- **Compiler:** `arm-none-eabi-gcc`  
-- **CMake:** 3.22+  
-- **Debugger/Flasher:** ST-Link  
-- **Editor:** Visual Studio Code with STM32 extensions  
+
+### Development Environment
+
+- **Compiler:** `arm-none-eabi-gcc`
+- **Build System:** CMake 3.22+
+- **Debugger:** ST-Link
+- **Editor:** Visual Studio Code
 
 ---
+
+## 📚 What I Learned / Skills Demonstrated
+
+### Key Takeaways
+
+- Low-level **embedded C programming** without HAL
+- Building custom drivers using **direct register access**
+- Deep understanding of **STM32 architecture and clock systems**
+- **I²C and UART** protocol implementation and debugging
+- Working with **CMake**, **GCC toolchain**, and **VS Code** for embedded workflows
+- Turning a **personal problem** into a **technical solution** — bridging software engineering and real-world impact
+
+---
+
+## 🧾 Status
+
+### Project Progress
+
+This is an ongoing project — next milestones include:
+
+- Completing the BME280 driver
+- Integrating Wi-Fi data upload via ESP8266
+- Building a small monitoring dashboard
+
+---
+
+### Author
+
+Created and developed by **Ben Weissman**  
+Computer Science student and embedded systems enthusiast.
