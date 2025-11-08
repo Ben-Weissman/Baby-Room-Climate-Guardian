@@ -2,17 +2,11 @@
     "version": 4,
     "configurations": [
         {
-            /** 
-             * ms-vscode.cmake-tools plugin should be installed.
-             * 
-             * It provides data for C/C++ plugin,
-             * such as include paths, browse paths, defines, etc.
-             */
             "includePath": [
-                "/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Device/ST/STM32F4xx/Include",
-                "/Users/benweissman/Desktop/Projects/stm32/F401RE/chip_headers/CMSIS/Include",
-                "/Users/benweissman/Desktop/Projects/stm32/project_tests/core/inc",
-                "/Users/benweissman/Desktop/Projects/stm32/project_tests/core/src"
+                "${workspaceFolder}/core/inc",
+                "${workspaceFolder}/core/src",
+                "${workspaceFolder}/CMSIS/core",
+                "${workspaceFolder}/CMSIS/device"
             ],
             "defines": [
                 "STM32F401xE"

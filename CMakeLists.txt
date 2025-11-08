@@ -90,9 +90,9 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     $<$<COMPILE_LANGUAGE:CXX>: ${include_cxx_DIRS}>
     $<$<COMPILE_LANGUAGE:ASM>: ${include_asm_DIRS}>
     ${CMAKE_SOURCE_DIR}/core/inc
-    ${CMAKE_SOURCE_DIR}/core/inc/CMSIS/Device/ST/STM32F4xx/Include
-    ${CMAKE_SOURCE_DIR}/core/inc/CMSIS/Include
     ${CMAKE_SOURCE_DIR}/core/src
+    ${CMAKE_SOURCE_DIR}/CMSIS/core
+    ${CMAKE_SOURCE_DIR}/CMSIS/device
 )
 
 # Add project symbols (macros)

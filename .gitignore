@@ -1,6 +1,6 @@
 # --- Build output ---
 build/
-build/*
+*/build/
 *.o
 *.d
 *.elf
@@ -18,19 +18,19 @@ build.ninja
 CMakePresets.json
 
 # --- IDE / VSCode ---
-.vscode/ipch/
-.vscode/.browse.VC.db*
-.vscode/.cmake/
-# keep core configs, ignore generated files only
-.vscode/*.log
-.vscode/*.db*
+.vscode/
+.idea/
+*.code-workspace
 
 # --- STM32 / CubeIDE ---
 *.launch
 *.log
 *.uvoptx
 *.uvprojx
+*.ioc
 
 # --- OS / Misc ---
 .DS_Store
 Thumbs.db
+*.swp
+*.tmp

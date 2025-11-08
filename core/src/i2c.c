@@ -1,4 +1,5 @@
 #include "i2c.h"
+#include "rcc.h"
 
 static const I2C_PinMap_t I2C_PinMap[] = {
     {GPIOB, PIN_8, GPIOB, PIN_9},   // I2C1
@@ -204,4 +205,27 @@ Status_t I2C_config_clock(I2C_TypeDef* I2Cx, uint32_t speed_mode, uint32_t duty_
     return STATUS_OK;
 }
 
-// static uint32_t I2C_calc_trise(uint32_t pclk, uint32_t speed) {}
+static Status_t I2C_calc_trise(uint32_t pclk, uint32_t speed_mode, uint32_t* trise_val) {
+    /*  In standard mode (100 khz), the maximum rise time is 1000ns:
+     *  TRISE = F_CLK1(MHz) + 1, where F_CLK1 = peripheral clock frequency in MHz
+     *  In fast mode (400 khz), the maximum rise time is 300ns:
+     *  TRISE = [F_CLK1(MHz) * 300ns] + 1
+     */
+    if (trise_val == NULL) {
+        return STATUS_INVALID;
+    }
+
+    uint32_t freq_mhz = HZ_TO_MHZ(pclk);
+    if (freq_mhz == 0U) {
+        return STATUS_INVALID;
+    }
+    if (speed_mode == I2C_SPEED_STD) {
+        *trise_val = freq_mhz + 1U;
+    } else if (speed_mode == I2C_SPEED_FAST) {
+        // Multiply then divide to avoid truncation
+        *trise_val = ((freq_mhz * I2C_FAST_MAX_RISE_TIME_NS) / 1000U) + 1U;
+    } else {
+        return STATUS_INVALID;
+    }
+    return STATUS_OK;
+}

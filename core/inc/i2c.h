@@ -1,21 +1,23 @@
 #ifndef I2C_H
 #define I2C_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "board.h"
 #include "gpio.h"
 #include "status.h"
 #include "stm32f4xx.h"
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define I2C_BUS_FREE_TIMEOUT 10000U
 #define I2C_MIN_STD_PERIPH_CLK_HZ 2000000U
 #define I2C_MIN_FAST_PERIPH_CLK_HZ 4000000U
 #define HZ_TO_MHZ(hz_value) ((hz_value) / 1000000U)
 #define I2C_MIN_CCR_VALUE 4U
+#define I2C_STD_MAX_RISE_TIME_NS 1000U // 1000ns = 1us
+#define I2C_FAST_MAX_RISE_TIME_NS 300U // 300ns
 
 typedef struct {
     GPIO_TypeDef* scl_port;
