@@ -1,5 +1,6 @@
 #include "i2c.h"
 #include "rcc.h"
+#include <stdio.h>
 
 // *-------------------------------- I2C Pin Mapping ----------------------------*/
 static const I2C_PinMap_t I2C_PinMap[] = {
@@ -8,7 +9,292 @@ static const I2C_PinMap_t I2C_PinMap[] = {
     {GPIOA, PIN_8, GPIOC, PIN_9}    // I2C3
 };
 
+// ---------------------------- I2C Internal Function Prototypes ----------------------------*/
+static Status_t I2C_enable_rcc(I2C_TypeDef* I2Cx);
+static Status_t I2C_gpio_config(I2C_TypeDef* I2Cx);
+static Status_t I2C_software_reset(I2C_TypeDef* I2Cx);
+static Status_t I2C_config_clock(I2C_TypeDef* I2Cx, uint32_t speed_mode, uint32_t duty_cycle);
+
+static Status_t    I2C_wait_flag(I2C_TypeDef* I2Cx, StatusRegister_t reg_sel, uint32_t flag_mask,
+                                 FlagStatus_t desired_state);
+static Status_t    I2C_wait_flag_recover(I2C_TypeDef* I2Cx, StatusRegister_t reg_sel,
+                                         uint32_t flag_mask, FlagStatus_t desired_state);
+static Status_t    I2C_recover(I2C_TypeDef* I2Cx);
+static void        I2C_clear_addr_flag(I2C_TypeDef* I2Cx);
+static inline void I2C_enable_ack(I2C_TypeDef* I2Cx);
+static inline void I2C_disable_ack(I2C_TypeDef* I2Cx);
+static inline void I2C_generate_stop(I2C_TypeDef* I2Cx);
+
+static Status_t I2C_calc_ccr(uint32_t pclk, uint32_t speed_mode, uint32_t duty, uint32_t* ccr_val);
+static Status_t I2C_calc_trise(uint32_t pclk, uint32_t speed_mode, uint32_t* trise_val);
+static Status_t I2C_start(I2C_TypeDef* I2Cx);
+static Status_t I2C_send_address(I2C_TypeDef* I2Cx, uint8_t address, I2C_direction_t direction);
+static inline void I2C_enable(I2C_TypeDef* I2Cx);
+static inline void I2C_disable(I2C_TypeDef* I2Cx);
+
+// *---------------------------- I2C Public Functions ----------------------------*/
+
+I2C_InitError_t I2C_init(I2C_TypeDef* I2Cx, I2C_config_t* cfg) {
+    if (cfg == NULL) {
+        return I2C_INIT_CFG_FAIL;
+    }
+
+    // Enable I2C clock via RCC
+    if (I2C_enable_rcc(I2Cx) != STATUS_OK) {
+        return I2C_INIT_RCC_FAIL;
+    }
+
+    // Configure GPIO
+    if (I2C_gpio_config(I2Cx) != STATUS_OK) {
+        return I2C_INIT_GPIO_FAIL;
+    }
+
+    // Perform I2C reset
+    if (I2C_software_reset(I2Cx) != STATUS_OK) {
+        return I2C_INIT_RESET_FAIL;
+    }
+
+    // Configure timing
+    if (I2C_config_clock(I2Cx, cfg->speed_mode, cfg->duty_cycle) != STATUS_OK) {
+        return I2C_INIT_CLOCK_FAIL;
+    }
+    return I2C_INIT_OK;
+}
+
+Status_t I2C_master_write_byte(I2C_TypeDef* I2Cx, uint8_t data) {
+    // Wait until data register is empty (TXE=1) or previous byte finished (BTF=1)
+    Status_t status = I2C_wait_flag_recover(I2Cx, I2C_SR1, I2C_SR1_TXE | I2C_SR1_BTF, FLAG_SET);
+    if (status != STATUS_OK) {
+        return status;
+    }
+
+    // Write new data to data register
+    I2Cx->DR = data;
+
+    return STATUS_OK;
+}
+
+Status_t I2C_master_write(I2C_TypeDef* I2Cx, uint8_t slave_addr, uint8_t mem_addr,
+                          const uint8_t* data, uint32_t length) {
+    if (data == NULL || length == 0) {
+        return STATUS_INVALID;
+    }
+
+    /* --- Step 1 ---
+     * Send START condition and the slave address with write indication, then send the
+     * memory address inside the slave to read from.
+     */
+    if (I2C_start(I2Cx) != STATUS_OK) {
+        return STATUS_ERROR;
+    }
+
+    if (I2C_send_address(I2Cx, slave_addr, I2C_WRITE) != STATUS_OK) {
+        return STATUS_ERROR;
+    }
+
+    if (I2C_master_write_byte(I2Cx, mem_addr) != STATUS_OK) {
+        return STATUS_ERROR;
+    }
+
+    /* --- Step 2 ---
+     * Write N bytes from the data buffer to the slave device.
+     */
+    for (uint32_t i = 0; i < length; i++) {
+        if (I2C_master_write_byte(I2Cx, data[i]) != STATUS_OK) {
+            return STATUS_ERROR;
+        }
+    }
+
+    // STOP condition
+    I2C_generate_stop(I2Cx);
+
+    return STATUS_OK;
+}
+
+Status_t I2C_master_read(I2C_TypeDef* I2Cx, uint8_t slave_addr, uint8_t mem_addr, uint8_t* buffer,
+                         uint32_t length) {
+    if (buffer == NULL || length == 0) {
+        return STATUS_INVALID;
+    }
+
+    /* --- Step 1 ---
+     * Send START condition and the slave address with write indication, then send the
+     * memory address inside the slave to read from.
+     */
+    if (I2C_start(I2Cx) != STATUS_OK) {
+        return STATUS_ERROR;
+    }
+
+    if (I2C_send_address(I2Cx, slave_addr, I2C_WRITE) != STATUS_OK) {
+        return STATUS_ERROR;
+    }
+
+    if (I2C_master_write_byte(I2Cx, mem_addr) != STATUS_OK) {
+        return STATUS_ERROR;
+    }
+
+    /* --- Step 2 ---
+     * Repeat START condition in order to read from the slave, this time with read indication.
+     */
+    if (I2C_start(I2Cx) != STATUS_OK) {
+        return STATUS_ERROR;
+    }
+
+    if (I2C_send_address(I2Cx, slave_addr, I2C_READ) != STATUS_OK) {
+        return STATUS_ERROR;
+    }
+
+    /* --- Step 3 ---
+     * Enable ACK and read N bytes from the slave, store the data into the provided buffer.
+     */
+    I2C_enable_ack(I2Cx);
+
+    for (uint32_t i = 0; i < length; i++) {
+        // If last byte then NACK and generate STOP
+        if (i == (length - 1)) {
+            I2C_disable_ack(I2Cx); // Acts as NACK for last byte
+            I2C_generate_stop(I2Cx);
+        }
+
+        // Wait for RXNE flag
+        if (I2C_wait_flag_recover(I2Cx, I2C_SR1, I2C_SR1_RXNE, FLAG_SET) != STATUS_OK) {
+            return STATUS_ERROR;
+        }
+        // Insert received byte into buffer
+        buffer[i] = (uint8_t) I2Cx->DR;
+    }
+
+    return STATUS_OK;
+}
+
 // *---------------------------- I2C Internal Functions ----------------------------*/
+/**
+ * @brief  Clear the ADDR flag after an address acknowledge.
+ *
+ * Reads SR1 followed by SR2 to release the I2C peripheral from the
+ * address phase, as required by the STM32 hardware design.
+ *
+ * @param[in] I2Cx  Pointer to the I2C peripheral instance.
+ *
+ * @note This operation is mandatory before any data phase begins.
+ */
+
+static void I2C_clear_addr_flag(I2C_TypeDef* I2Cx) {
+    // Clear ADDR flag by reading SR1 and SR2 (required by hardware)
+    (void) I2Cx->SR1;
+    (void) I2Cx->SR2;
+}
+
+/**
+ * @brief  Enable I2C acknowledge.
+ *
+ * Sets the ACK bit, allowing the peripheral to acknowledge received bytes.
+ *
+ * @param[in] I2Cx  Pointer to the I2C peripheral instance.
+ */
+
+static inline void I2C_enable_ack(I2C_TypeDef* I2Cx) {
+    I2Cx->CR1 |= I2C_CR1_ACK;
+}
+
+/**
+ * @brief  Disable I2C acknowledge.
+ *
+ * Clears the ACK bit, causing the next received byte to be NACKed.
+ * Required when reading the final byte in a multi-byte sequence.
+ *
+ * @param[in] I2Cx  Pointer to the I2C peripheral instance.
+ */
+
+static inline void I2C_disable_ack(I2C_TypeDef* I2Cx) {
+    I2Cx->CR1 &= ~I2C_CR1_ACK;
+}
+
+/**
+ * @brief  Generate a STOP condition on the I2C bus.
+ *
+ * Sets the STOP bit in CR1 to release the bus after the current
+ * communication finishes.
+ *
+ * @param[in] I2Cx  Pointer to the I2C peripheral instance.
+ */
+
+static inline void I2C_generate_stop(I2C_TypeDef* I2Cx) {
+    I2Cx->CR1 |= I2C_CR1_STOP;
+}
+
+/**
+ * @brief  Wait for an I2C status flag with automatic recovery on timeout.
+ *
+ * Calls @ref I2C_wait_flag() to poll a flag in either SR1 or SR2.
+ * If a timeout occurs, the function executes the @ref I2C_recover() procedure.
+ *
+ *
+ * @param[in] I2Cx           Pointer to the I2C peripheral instance.
+ * @param[in] flag_mask      Mask of the flag bit to evaluate.
+ * @param[in] reg_sel        Status register to check (I2C_SR1 or I2C_SR2).
+ * @param[in] desired_state  Expected state of the flag (FLAG_SET or FLAG_CLEAR).
+ *
+ * @retval STATUS_OK         Flag reached desired state, or timeout occurred but
+ *                           recovery completed successfully.
+ * @retval STATUS_INVALID    Invalid desired_state parameter.
+ *
+ * @note This wrapper provides robustness for higher-level functions such as START,
+ *       address sending, or multi-byte reads, without complicating their logic.
+ */
+static Status_t I2C_wait_flag_recover(I2C_TypeDef* I2Cx, StatusRegister_t reg_sel,
+                                      uint32_t flag_mask, FlagStatus_t desired_state) {
+    Status_t status = I2C_wait_flag(I2Cx, flag_mask, reg_sel, desired_state);
+    if (status == STATUS_TIMEOUT) {
+        status = I2C_recover(I2Cx);
+        return (status == STATUS_OK) ? STATUS_OK : status;
+    }
+    return status;
+}
+
+/**
+ * @brief  Wait for an I2C status flag in SR1 or SR2 to reach the desired state.
+ *
+ * Polls either SR1 or SR2 (selected via @p reg_sel) until the specified
+ * flag reaches the expected state (set or cleared), or until a timeout occurs.
+ *
+ * @param[in] I2Cx           Pointer to the I2C peripheral instance.
+ * @param[in] reg_sel        Selects the status register to check:
+ *                           - I2C_SR1 → check SR1
+ *                           - I2C_SR2 → check SR2
+ * @param[in] flag_mask      Mask of the flag bit to evaluate in the chosen register.
+ * @param[in] desired_state  Expected state of the flag (FLAG_SET or FLAG_CLEAR).
+ *
+ * @retval STATUS_OK         Flag reached the expected state within timeout.
+ * @retval STATUS_TIMEOUT    Timeout expired before flag reached desired state.
+ * @retval STATUS_INVALID    Invalid desired_state parameter.
+ *
+ * @note This function performs no recovery. It is a low-level building block
+ *       used by higher-level operations such as START, address sending,
+ *       or byte reception.
+ */
+static Status_t I2C_wait_flag(I2C_TypeDef* I2Cx, StatusRegister_t reg_sel, uint32_t flag_mask,
+                              FlagStatus_t desired_state) {
+    uint32_t           timeout = I2C_BUS_FREE_TIMEOUT;
+    volatile uint32_t* reg     = NULL;
+
+    if (desired_state != FLAG_SET && desired_state != FLAG_CLEAR) {
+        return STATUS_INVALID;
+    }
+    // select the correct status register
+    reg = (reg_sel == I2C_SR2) ? &I2Cx->SR2 : &I2Cx->SR1;
+
+    while (timeout > 0U) {
+        const uint32_t current = *reg;
+
+        if ((desired_state == FLAG_SET && (current & flag_mask)) ||
+            (desired_state == FLAG_CLEAR && !(current & flag_mask))) {
+            return STATUS_OK;
+        }
+        timeout--;
+    }
+    return STATUS_TIMEOUT;
+}
 
 /**
  * @brief  Enable the peripheral clock for the specified I2C instance.
@@ -117,6 +403,42 @@ static Status_t I2C_gpio_config(I2C_TypeDef* I2Cx) {
     }
 
     return STATUS_OK;
+}
+
+/**
+ * @brief  Attempt to recover the I2C peripheral after a communication timeout.
+ *
+ * Generates a STOP condition, checks if the bus is still busy, and performs
+ * a software reset if necessary. The peripheral is then re-enabled.
+ *
+ * @param[in] I2Cx  Pointer to the I2C peripheral instance.
+ *
+ * @retval STATUS_OK  Recovery procedure completed.
+ *
+ * @note This function assumes recovery must always succeed and does
+ *       not propagate further error status.
+ */
+static Status_t I2C_recover(I2C_TypeDef* I2Cx) {
+    // Try generating stop condition
+    I2Cx->CR1 |= I2C_CR1_STOP;
+
+    // Short delay to propagate stop condition
+    for (volatile uint32_t i = 0; i < 1000; i++)
+        ;
+
+    if (I2Cx->SR2 & I2C_SR2_BUSY) {
+        // If line is till busy, perform software reset
+        I2C_software_reset(I2Cx);
+    }
+
+    /* TO DO: if still busy try bus recovery */
+
+    // Re-enable I2C peripheral and short delay
+    I2Cx->CR1 |= I2C_CR1_PE;
+    for (volatile uint32_t i = 0; i < 1000; i++)
+        ;
+
+    return STATUS_OK; // Recovery must be successful
 }
 
 /**
@@ -411,24 +733,22 @@ static inline void I2C_disable(I2C_TypeDef* I2Cx) {
 /**
  * @brief  Generate a START condition on the I2C bus.
  *
- * Waits until the I2C bus is free, then generates a START condition
- * and waits for the SB (Start Bit) flag to be set, indicating that the
- * start condition has been successfully transmitted.
+ * Waits until the bus is free, issues a START condition, and checks for
+ * the SB (Start Bit) flag using @ref I2C_wait_flag_recover().
  *
- * @param[in] I2Cx  Pointer to the I2C peripheral instance (I2C1, I2C2, or I2C3).
+ * @param[in] I2Cx  Pointer to the I2C peripheral instance.
  *
- * @retval STATUS_OK       START condition generated successfully.
- * @retval STATUS_TIMEOUT  Operation timed out or bus remained busy.
- * @retval STATUS_ERROR    Recovery failed after timeout.
+ * @retval STATUS_OK       START generated successfully, or timeout occurred
+ *                         but recovery succeeded.
+ * @retval STATUS_INVALID  Invalid desired_state parameter passed internally.
  *
- * @note  This function uses @ref I2C_wait_flag_recover() to ensure the bus
- *        is free before generating the start condition and to recover from
- *        potential bus lockups automatically.
+ * @note In the current implementation, timeouts are automatically handled
+ *       by the recovery mechanism, which may mask underlying bus issues.
  */
-Status_t I2C_start(I2C_TypeDef* I2Cx) {
+static Status_t I2C_start(I2C_TypeDef* I2Cx) {
     // Wait until bus is free (BUSY flag cleared)
     Status_t status = STATUS_OK;
-    status          = I2C_wait_flag_recover(I2Cx, I2C_SR2_BUSY, FLAG_CLEAR);
+    status          = I2C_wait_flag_recover(I2Cx, I2C_SR2, I2C_SR2_BUSY, FLAG_CLEAR);
     if (status != STATUS_OK) {
         return status;
     }
@@ -437,7 +757,7 @@ Status_t I2C_start(I2C_TypeDef* I2Cx) {
     I2Cx->CR1 |= I2C_CR1_START;
 
     // Wait until start generated (SB flag set)
-    status = I2C_wait_flag_recover(I2Cx, I2C_SR1_SB, FLAG_SET);
+    status = I2C_wait_flag_recover(I2Cx, I2C_SR1, I2C_SR1_SB, FLAG_SET);
     if (status != STATUS_OK) {
         return status;
     }
@@ -445,28 +765,23 @@ Status_t I2C_start(I2C_TypeDef* I2Cx) {
 }
 
 /**
- * @brief  Send the 7-bit slave address with direction bit on the I2C bus.
+ * @brief  Send a 7-bit slave address with direction bit on the I2C bus.
  *
- * Writes the slave address (left-shifted by one) combined with the
- * transfer direction bit (read or write) into the I2C data register.
- * Waits for the ADDR flag to be set, confirming that the address has
- * been transmitted and acknowledged by the slave.
+ * Writes the 7-bit slave address (left-shifted by 1) combined with the R/W bit
+ * into the data register. The function then waits for the ADDR flag to be set,
+ * using @ref I2C_wait_flag_recover(), and clears the ADDR flag by reading SR1
+ * followed by SR2.
  *
- * @param[in] I2Cx       Pointer to the I2C peripheral instance (I2C1, I2C2, or I2C3).
+ * @param[in] I2Cx       Pointer to the I2C peripheral instance.
  * @param[in] address    7-bit slave address.
- * @param[in] direction  Transfer direction:
- *                       - @ref I2C_WRITE : Master transmitter mode
- *                       - @ref I2C_READ  : Master receiver mode
+ * @param[in] direction  Transfer direction: @ref I2C_WRITE or @ref I2C_READ.
  *
- * @retval STATUS_OK       Address sent and acknowledged successfully.
- * @retval STATUS_TIMEOUT  Timeout while waiting for ADDR flag.
- * @retval STATUS_INVALID  Invalid direction parameter.
+ * @retval STATUS_OK       Address sent and acknowledged by the slave, or
+ *                         timeout occurred but recovery succeeded.
+ * @retval STATUS_INVALID  Invalid direction value or invalid desired_state
+ *                         detected internally.
  *
- * @note  The ADDR flag must be cleared by reading SR1 followed by SR2,
- *        as handled by @ref I2C_clear_addr_flag().
- * @note  This function is intended for internal use within the I2C driver.
- *        Use higher-level APIs such as @ref I2C_master_read_byte() or
- *        @ref I2C_master_write_byte() instead.
+ * @note This function clears the ADDR flag internally as required by STM32 I2C hardware.
  */
 static Status_t I2C_send_address(I2C_TypeDef* I2Cx, uint8_t address, I2C_direction_t direction) {
     // Check direction valid
@@ -478,7 +793,7 @@ static Status_t I2C_send_address(I2C_TypeDef* I2Cx, uint8_t address, I2C_directi
     I2Cx->DR = (address << 1U) | direction;
 
     // Wait until address is sent and ackowledged (ADDR flag set)
-    Status_t status = I2C_wait_flag_recover(I2Cx, I2C_SR1_ADDR, FLAG_SET);
+    Status_t status = I2C_wait_flag_recover(I2Cx, I2C_SR1, I2C_SR1_ADDR, FLAG_SET);
     if (status != STATUS_OK) {
         return status;
     }
@@ -486,191 +801,4 @@ static Status_t I2C_send_address(I2C_TypeDef* I2Cx, uint8_t address, I2C_directi
     I2C_clear_addr_flag(I2Cx);
 
     return STATUS_OK;
-}
-
-// *---------------------------- I2C Public Functions ----------------------------*/
-/**
- * @brief  Initialize the specified I2C peripheral.
- *
- * Performs the full initialization sequence for an I2C peripheral,
- * including clock enable, GPIO configuration, peripheral reset,
- * and timing configuration.
- *
- * **Initialization sequence:**
- * 1. Enable the I2C peripheral clock through RCC.
- * 2. Configure the GPIO pins for SCL and SDA (AF4, open-drain).
- * 3. Perform a software reset to clear internal I2C state.
- * 4. Configure I2C timing (CCR, TRISE, duty cycle).
- *
- * @param[in] I2Cx  Pointer to the I2C peripheral instance (I2C1, I2C2, or I2C3).
- * @param[in] cfg   Pointer to user configuration structure defining speed, duty cycle, etc.
- *                  Note: Supports speed and duty cycle only.
- *
- * @retval STATUS_OK       Initialization successful.
- * @retval STATUS_ERROR    One of the configuration steps failed.
- * @retval STATUS_INVALID  Invalid peripheral pointer or parameter.
- *
- * @pre   The corresponding GPIO clocks must be available via RCC.
- * @note  This function must be called once before any I2C read or write operation.
- * @note  Configuration structure supports speed and duty cycle only.
- */
-Status_t I2C_init(I2C_TypeDef* I2Cx, I2C_config_t* cfg) {
-    // Enable I2C clock via RCC
-    if (I2C_enable_rcc(I2Cx) != STATUS_OK) {
-        return STATUS_ERROR;
-    }
-
-    // Configure GPIO
-    if (I2C_gpio_config(I2Cx) != STATUS_OK) {
-        return STATUS_ERROR;
-    }
-
-    // Perform I2C reset
-    if (I2C_software_reset(I2Cx) != STATUS_OK) {
-        return STATUS_ERROR;
-    }
-
-    // Configure timing
-    if (I2C_config_clock(I2Cx, cfg->speed_mode, cfg->duty_cycle) != STATUS_OK) {
-        return STATUS_ERROR;
-    }
-    return STATUS_OK;
-}
-
-Status_t I2C_master_write_byte(I2C_TypeDef* I2Cx, uint8_t data) {
-    // Wait until data register is empty (TXE=1) or previous byte finished (BTF=1)
-    Status_t status = I2C_wait_flag(I2Cx, I2C_SR1_TXE | I2C_SR1_BTF, FLAG_SET);
-    if (status != STATUS_OK) {
-        return status;
-    }
-
-    // Write new data to data register
-    I2Cx->DR = data;
-
-    return STATUS_OK;
-}
-
-Status_t I2C_master_read_byte(I2C_TypeDef* I2Cx, uint8_t slave_addr, uint8_t slave_mem_addr,
-                              uint8_t* data) {
-    // Send start condition
-    if (I2C_start(I2Cx) != STATUS_OK) {
-        return STATUS_ERROR;
-    }
-    // Send slave address with write indication
-    if (I2C_send_address(I2Cx, slave_addr, I2C_WRITE) != STATUS_OK) {
-        return STATUS_ERROR;
-    }
-    // Send memory address to read from
-    if (I2C_master_write_byte(I2Cx, slave_mem_addr) != STATUS_OK) {
-        return STATUS_ERROR;
-    }
-    // Send repeated start condition
-    if (I2C_start(I2Cx) != STATUS_OK) {
-        return STATUS_ERROR;
-    }
-    // Send slave address with read indication
-    if (I2C_send_address(I2Cx, slave_addr, I2C_READ) != STATUS_OK) {
-        return STATUS_ERROR;
-    }
-    // Disable ACK
-    I2C_disable_ack(I2Cx);
-
-    // Clear ADDR flag
-    I2C_clear_addr_flag(I2Cx);
-
-    // Generate stop condition
-    I2C_generate_stop(I2Cx);
-
-    // Wait until data received (RXNE=1)
-    Status_t status = I2C_wait_flag(I2Cx, I2C_SR1_RXNE, FLAG_SET);
-    if (status != STATUS_OK) {
-        return status;
-    }
-
-    // Read data from data register
-    *data = (uint8_t) (I2Cx->DR);
-    return STATUS_OK;
-}
-
-static Status_t I2C_recover(I2C_TypeDef* I2Cx) {
-    // Try generating stop condition
-    I2Cx->CR1 |= I2C_CR1_STOP;
-
-    // Short delay to propagate stop condition
-    for (volatile uint32_t i = 0; i < 1000; i++)
-        ;
-
-    if (I2Cx->SR2 & I2C_SR2_BUSY) {
-        // If line is till busy, perform software reset
-        I2C_software_reset(I2Cx);
-    }
-
-    /* TO DO: if still busy try bus recovery */
-
-    // Re-enable I2C peripheral and short delay
-    I2Cx->CR1 |= I2C_CR1_PE;
-    for (volatile uint32_t i = 0; i < 1000; i++)
-        ;
-
-    return STATUS_OK; // Recovery must be successful
-}
-
-static inline void I2C_clear_addr_flag(I2C_TypeDef* I2Cx) {
-    // Clear ADDR flag by reading SR1 and SR2 (required by hardware)
-    (void) I2Cx->SR1;
-    (void) I2Cx->SR2;
-}
-
-static inline void I2C_disable_ack(I2C_TypeDef* I2Cx) {
-    I2Cx->CR1 &= ~I2C_CR1_ACK;
-}
-
-static inline void I2C_generate_stop(I2C_TypeDef* I2Cx) {
-    I2Cx->CR1 |= I2C_CR1_STOP;
-}
-
-static Status_t I2C_wait_flag_recover(I2C_TypeDef* I2Cx, uint32_t flag_mask,
-                                      FlagStatus_t desired_state) {
-    Status_t status = I2C_wait_flag(I2Cx, flag_mask, desired_state);
-    if (status == STATUS_TIMEOUT) {
-        I2C_recover(I2Cx);
-        return STATUS_OK;
-    }
-    return status;
-}
-
-static Status_t I2C_wait_flag(I2C_TypeDef* I2Cx, uint32_t flag_mask, FlagStatus_t desired_state) {
-    const uint32_t SR_HALFWORD_LEN = 16U;
-    const uint32_t SR_UPPER_MASK   = ((uint32_t) 0xFFFFU << SR_HALFWORD_LEN);
-
-    uint32_t           timeout = I2C_BUS_FREE_TIMEOUT;
-    volatile uint32_t* reg     = NULL;
-
-    // Test desired state parameter
-    if (desired_state != FLAG_SET && desired_state != FLAG_CLEAR) {
-        return STATUS_INVALID;
-    }
-
-    // Determine which status register to check
-    if (flag_mask & SR_UPPER_MASK) {
-        // SR2 flags are defined in upper halfword (bits 16–31)
-        reg = &I2Cx->SR2;
-        // Adjust mask to match SR2 actual bits (0–15)
-        flag_mask >>= SR_HALFWORD_LEN;
-    } else {
-        // SR1 flags occupy lower 16 bits (bits 0–15)
-        reg = &I2Cx->SR1;
-    }
-
-    // Wait until flag reaches desired state or timeout expires
-    while (--timeout > 0U) {
-        const uint32_t current = *reg;
-
-        if ((desired_state == FLAG_SET && (current & flag_mask)) ||
-            (desired_state == FLAG_CLEAR && !(current & flag_mask))) {
-            return STATUS_OK;
-        }
-    }
-    // Timeout expired
-    return STATUS_TIMEOUT;
 }
