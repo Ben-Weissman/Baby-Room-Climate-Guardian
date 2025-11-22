@@ -1,0 +1,6 @@
+TODO:
+
+1. add sys tick timer
+2. change timeout's in i2c & usart using sys tick timer
+3. add recover modes when usart is stuck
+4. add bus_recovery_lines to i2c/usart for level 2 recovery when stuck

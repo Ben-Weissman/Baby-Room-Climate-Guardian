@@ -42,16 +42,33 @@ typedef enum {
     I2C_DUTY_CYCLE_FAST = 1U,
 } I2C_DUTY_CYCLE;
 
+typedef enum {
+    I2C_WRITE = 0U,
+    I2C_READ  = 1U,
+} I2C_direction_t;
+
+typedef enum { FLAG_CLEAR = 0U, FLAG_SET = 1U } FlagStatus_t;
+
+typedef enum {
+    I2C_SR1 = 0U,
+    I2C_SR2 = 1U,
+} StatusRegister_t;
+/* Currently supports only master mode 7 bit address */
 typedef struct {
-    uint32_t clock_speed;     // I2C speed in Hz (100000 = standard, 400000 = fast)
-    uint32_t duty_cycle;      // 0 = standard (Tlow/Thigh = 2), 1 = fast mode (16/9)
-    uint8_t  own_address;     // For slave mode (0 if unused)
-    uint8_t  addressing_mode; // 0 = 7-bit, 1 = 10-bit
-    uint8_t  general_call;    // Enable/disable general call address
-    uint8_t  clock_stretch;   // Allow slaves to hold SCL low
-    uint8_t  dual_address;    // Enable second own address
-    uint8_t  second_address;  // Optional second address
+    uint32_t speed_mode; // I2C speed in Hz (100000 = standard, 400000 = fast)
+    uint32_t duty_cycle; // 0 = standard (2:1), 1 = fast mode (16:9)
 } I2C_config_t;
+
+typedef enum {
+    I2C_INIT_OK            = 0x00,
+    I2C_INIT_RCC_FAIL      = 0x01,
+    I2C_INIT_GPIO_FAIL     = 0x02,
+    I2C_INIT_RESET_FAIL    = 0x03,
+    I2C_INIT_CLOCK_FAIL    = 0x04
+} I2C_InitError_t;
+
+/*-------------------------------- Functions ----------------------------*/
+
 
 #ifdef __cplusplus
 }
