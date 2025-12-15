@@ -1,3 +1,4 @@
+
 #include "i2c.h"
 #include "rcc.h"
 #include <stdio.h>
@@ -80,32 +81,32 @@ Status_t I2C_master_write(I2C_TypeDef* I2Cx, uint8_t slave_addr, uint8_t mem_add
         return STATUS_INVALID;
     }
 
-    /* --- Step 1 ---
-     * Send START condition and the slave address with write indication, then send the
-     * memory address inside the slave to read from.
-     */
+    // 1. Send START
     if (I2C_start(I2Cx) != STATUS_OK) {
         return STATUS_ERROR;
     }
 
+    // 2. Send Slave Address (Write)
     if (I2C_send_address(I2Cx, slave_addr, I2C_WRITE) != STATUS_OK) {
         return STATUS_ERROR;
     }
 
+    // 2.5 Clear ADDR flag to release SCL and start data phase
+    I2C_clear_addr_flag(I2Cx);
+
+    // 3. Send Memory Address (Register we want to write to)
     if (I2C_master_write_byte(I2Cx, mem_addr) != STATUS_OK) {
         return STATUS_ERROR;
     }
 
-    /* --- Step 2 ---
-     * Write N bytes from the data buffer to the slave device.
-     */
+    // 4. Write data bytes
     for (uint32_t i = 0; i < length; i++) {
         if (I2C_master_write_byte(I2Cx, data[i]) != STATUS_OK) {
             return STATUS_ERROR;
         }
     }
 
-    // STOP condition
+    // 5. STOP
     I2C_generate_stop(I2Cx);
 
     return STATUS_OK;
@@ -129,14 +130,30 @@ Status_t I2C_master_read(I2C_TypeDef* I2Cx, uint8_t slave_addr, uint8_t mem_addr
         return STATUS_ERROR;
     }
 
+    // Clear ADDR flag
+    I2C_clear_addr_flag(I2Cx);
+
+    // Wait until TXE = 1 so we can send mem_addr
+    if (I2C_wait_flag_recover(I2Cx, I2C_SR1, I2C_SR1_TXE, FLAG_SET) != STATUS_OK) {
+        return STATUS_ERROR;
+    }
+
     if (I2C_master_write_byte(I2Cx, mem_addr) != STATUS_OK) {
+        return STATUS_ERROR;
+    }
+
+    // Wait for BTF to ensure mem_addr is fully sent
+    if (I2C_wait_flag_recover(I2Cx, I2C_SR1, I2C_SR1_BTF, FLAG_SET) != STATUS_OK) {
         return STATUS_ERROR;
     }
 
     /* --- Step 2 ---
      * Repeat START condition in order to read from the slave, this time with read indication.
      */
-    if (I2C_start(I2Cx) != STATUS_OK) {
+    // Repeated START — do NOT wait for BUSY=0
+    I2Cx->CR1 |= I2C_CR1_START;
+
+    if (I2C_wait_flag_recover(I2Cx, I2C_SR1, I2C_SR1_SB, FLAG_SET) != STATUS_OK) {
         return STATUS_ERROR;
     }
 
@@ -144,23 +161,38 @@ Status_t I2C_master_read(I2C_TypeDef* I2Cx, uint8_t slave_addr, uint8_t mem_addr
         return STATUS_ERROR;
     }
 
-    /* --- Step 3 ---
-     * Enable ACK and read N bytes from the slave, store the data into the provided buffer.
-     */
-    I2C_enable_ack(I2Cx);
+    // Single byte read case
+    if (length == 1) {
+        // NACK and STOP before clearing ADDR
+        I2C_disable_ack(I2Cx);
+        I2C_clear_addr_flag(I2Cx);
+        I2C_generate_stop(I2Cx);
 
+        // Wait for RXNE flag
+        if (I2C_wait_flag_recover(I2Cx, I2C_SR1, I2C_SR1_RXNE, FLAG_SET) != STATUS_OK)
+            return STATUS_ERROR;
+
+        buffer[0] = (uint8_t) I2Cx->DR;
+
+        return STATUS_OK;
+    }
+
+    // Multi-byte read case
+    // enable ACK first
+    I2C_enable_ack(I2Cx);
+    I2C_clear_addr_flag(I2Cx);
+
+    // Free to read multiple bytes
     for (uint32_t i = 0; i < length; i++) {
-        // If last byte then NACK and generate STOP
-        if (i == (length - 1)) {
-            I2C_disable_ack(I2Cx); // Acts as NACK for last byte
+        if (i == length - 2U) {
+            // Before reading the last two bytes: NACK last byte and generate STOP
+            I2C_disable_ack(I2Cx);
             I2C_generate_stop(I2Cx);
         }
 
-        // Wait for RXNE flag
-        if (I2C_wait_flag_recover(I2Cx, I2C_SR1, I2C_SR1_RXNE, FLAG_SET) != STATUS_OK) {
+        if (I2C_wait_flag_recover(I2Cx, I2C_SR1, I2C_SR1_RXNE, FLAG_SET) != STATUS_OK)
             return STATUS_ERROR;
-        }
-        // Insert received byte into buffer
+
         buffer[i] = (uint8_t) I2Cx->DR;
     }
 
@@ -244,10 +276,10 @@ static inline void I2C_generate_stop(I2C_TypeDef* I2Cx) {
  */
 static Status_t I2C_wait_flag_recover(I2C_TypeDef* I2Cx, StatusRegister_t reg_sel,
                                       uint32_t flag_mask, FlagStatus_t desired_state) {
-    Status_t status = I2C_wait_flag(I2Cx, flag_mask, reg_sel, desired_state);
+    Status_t status = I2C_wait_flag(I2Cx, reg_sel, flag_mask, desired_state);
     if (status == STATUS_TIMEOUT) {
-        status = I2C_recover(I2Cx);
-        return (status == STATUS_OK) ? STATUS_OK : status;
+        I2C_recover(I2Cx);
+        return STATUS_TIMEOUT;
     }
     return status;
 }
@@ -792,13 +824,11 @@ static Status_t I2C_send_address(I2C_TypeDef* I2Cx, uint8_t address, I2C_directi
     // Send address + direction
     I2Cx->DR = (address << 1U) | direction;
 
-    // Wait until address is sent and ackowledged (ADDR flag set)
+    // Wait until address is sent and ackowledged (ADDR flag set) or
     Status_t status = I2C_wait_flag_recover(I2Cx, I2C_SR1, I2C_SR1_ADDR, FLAG_SET);
     if (status != STATUS_OK) {
         return status;
     }
-    // Clear ADDR flag
-    I2C_clear_addr_flag(I2Cx);
 
     return STATUS_OK;
 }

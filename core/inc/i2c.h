@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-#define I2C_BUS_FREE_TIMEOUT 10000U
+#define I2C_BUS_FREE_TIMEOUT 1000000U
 #define I2C_MIN_STD_PERIPH_CLK_HZ 2000000U
 #define I2C_MIN_FAST_PERIPH_CLK_HZ 4000000U
 #define HZ_TO_MHZ(hz_value) ((hz_value) / 1000000U)

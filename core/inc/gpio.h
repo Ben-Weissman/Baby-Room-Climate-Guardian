@@ -95,6 +95,9 @@ Status_t GPIO_pin_read(GPIO_TypeDef* GPIOx, uint32_t pin_number, PinState_t* sta
  */
 Status_t GPIO_config_alternate(GPIO_TypeDef* GPIOx, uint32_t pin_number, uint32_t af_value);
 
+Status_t GPIO_pin_pullup_pulldown(GPIO_TypeDef* GPIOx, GPIO_PullMode_t mode, uint32_t pin_number);
+Status_t GPIO_pin_output_type(GPIO_TypeDef* GPIOx, uint32_t type, uint32_t pin_number);
+
 #ifdef __cplusplus
 }
 #endif
